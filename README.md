@@ -12,6 +12,7 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 - Express
 - MongoDB
 - dotenv
+- bcrypt
 
 ## Instalación
 
@@ -48,23 +49,24 @@ src/
 ├── routes/            # definición de endpoints
 ├── controllers/       # reciben la request y devuelven la response
 ├── models/            # schemas de Mongoose
-├── utils/             # aún no utilizado
+├── utils/             # helpers reutilizables 
 ├── dao/               # aún no utilizado
 ├── middlewares/       # aún no utilizado
-├── repositoires/      # aún no utilizado
+├── repositories/      # aún no utilizado
 └── services/          # aún no utilizado
 app.js                 # configuración de la app de Express
 ```
 
 ## Endpoints principales
 
-| Método | Endpoint            | Descripción                               |
-|--------|---------------------|-------------------------------------------|
-| GET    | `/api/health`       | Verifica que el servidor está activo      |
-| GET    | `/api/users`        | Lista los usuarios registrados            |
-| POST   | `/api/users`        | Crea un usuario                           |
-| GET    | `/api/events`       | Lista los eventos disponibles             |
-| POST   | `/api/events`       | Crea un evento                            |
+| Método | Endpoint                         | Descripción                               |
+|--------|----------------------------------|-------------------------------------------|
+| GET    | `/api/health`                    | Verifica que el servidor está activo      |
+| GET    | `/api/users`                     | Lista los usuarios registrados            |
+| POST   | `/api/users`                     | Crea un usuario                           |
+| GET    | `/api/events`                    | Lista los eventos disponibles             |
+| POST   | `/api/events`                    | Crea un evento                            |
+| POST   | `/api/sessions/register`         | Registra un usuario nuevo                 |
 
 ## Ejemplo de uso
 
@@ -78,4 +80,4 @@ curl http://localhost:3000/api/events
 
 ## Estado del proyecto
 
-Etapa 1: estructura por capas, variables de entorno, endpoints base.
+Etapa 2 (Pre-entrega 2): Registro de usuarios, normalización de email, validaciones de formato/longitud, hasheo de contraseñas con bcrypt.
