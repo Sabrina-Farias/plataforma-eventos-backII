@@ -13,6 +13,8 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 - MongoDB
 - dotenv
 - bcrypt
+- jsonwebtoken
+- cookie-parser
 
 ## Instalación
 
@@ -26,10 +28,13 @@ npm install
 
 Crear un archivo `.env` en la raíz del proyecto (usar `.env.example` como referencia) con las siguientes variables:
 
-| Variable      | Descripción                                   |
-|---------------|------------------------------------------------|
-| `PORT`        | Puerto donde se levanta el servidor            |
-| `MONGO_URL`   | Cadena de conexión a MongoDB                   |
+| Variable           | Descripción                                    |
+|--------------------|------------------------------------------------|
+| `PORT`             | Puerto donde se levanta el servidor            |
+| `MONGO_URL`        | Cadena de conexión a MongoDB                   |
+| `NODE_ENV`         | Entorno de ejecución (development o production)|
+| `JWT_SECRET`       | Clave para firmar y verificar los tokens JWT.  |
+| `JWT_EXPIRES_IN`   | Tiempo de expiración configurado para el token |
 
 ## Cómo ejecutar el servidor
 
@@ -51,22 +56,25 @@ src/
 ├── models/            # schemas de Mongoose
 ├── utils/             # helpers reutilizables 
 ├── dao/               # aún no utilizado
-├── middlewares/       # aún no utilizado
+├── middlewares/       # intermediarios para autenticación y protección de rutas
 ├── repositories/      # aún no utilizado
-└── services/          # aún no utilizado
-app.js                 # configuración de la app de Express
+└── services/          # lógica de negocio
+└── app.js             # configuración de la app de Express
 ```
 
 ## Endpoints principales
 
-| Método | Endpoint                         | Descripción                               |
-|--------|----------------------------------|-------------------------------------------|
-| GET    | `/api/health`                    | Verifica que el servidor está activo      |
-| GET    | `/api/users`                     | Lista los usuarios registrados            |
-| POST   | `/api/users`                     | Crea un usuario                           |
-| GET    | `/api/events`                    | Lista los eventos disponibles             |
-| POST   | `/api/events`                    | Crea un evento                            |
-| POST   | `/api/sessions/register`         | Registra un usuario nuevo                 |
+| Método | Endpoint                         | Descripción                                                                |
+|--------|----------------------------------|----------------------------------------------------------------------------|
+| GET    | `/api/health`                    | Verifica que el servidor está activo                                       |
+| GET    | `/api/users`                     | Lista los usuarios registrados                                             |
+| POST   | `/api/users`                     | Crea un usuario                                                            |
+| GET    | `/api/events`                    | Lista los eventos disponibles                                              |
+| POST   | `/api/events`                    | Crea un evento                                                             |
+| POST   | `/api/sessions/register`         | Registra un usuario nuevo                                                  |
+| POST   | `/api/sessions/login`            | Autentificación de usuario, generando el token y lo almacena en una cookie |
+| GET    | `/api/sessions/current`          | Ruta protegida por middleware. Lee la cookie, verifica el token y retorna los datos del usuario |
+| POST   | `/api/sessions/logout`           | Cierra la sesión y elimina la cookie                                       |
 
 ## Ejemplo de uso
 
@@ -80,4 +88,4 @@ curl http://localhost:3000/api/events
 
 ## Estado del proyecto
 
-Etapa 2 (Pre-entrega 2): Registro de usuarios, normalización de email, validaciones de formato/longitud, hasheo de contraseñas con bcrypt.
+Etapa 3 (Pre-entrega 3): Implementación de autenticación con JWT, cookie HTTP Only, middleware de autenticación y control de sesiones.
