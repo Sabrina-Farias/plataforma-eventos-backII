@@ -89,12 +89,12 @@ curl http://localhost:3000/api/health
 
 curl http://localhost:3000/api/events
 # { "message": [] }
-```
 
 # Registrar un usuario nuevo:
 curl -X POST http://localhost:3000/api/sessions/register \
   -H "Content-Type: application/json" \
   -d '{"first_name": "Sabri", "last_name": "Farias", "email": "sabrifa@mail.com", "password": "password123"}'
+```
 
 ## Estado del proyecto
 
