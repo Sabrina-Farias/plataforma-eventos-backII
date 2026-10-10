@@ -20,7 +20,6 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 
 ```bash
 git clone <url-del-repositorio>
-cd codigo
 npm install
 ```
 
@@ -35,6 +34,7 @@ Crear un archivo `.env` en la raíz del proyecto (usar `.env.example` como refer
 | `NODE_ENV`         | Entorno de ejecución (development o production)|
 | `JWT_SECRET`       | Clave para firmar y verificar los tokens JWT.  |
 | `JWT_EXPIRES_IN`   | Tiempo de expiración configurado para el token |
+| `COOKIE_SECRET`    | Clave secreta para firmar las cookies.         |
 
 ## Cómo ejecutar el servidor
 
@@ -55,12 +55,18 @@ src/
 ├── controllers/       # reciben la request y devuelven la response
 ├── models/            # schemas de Mongoose
 ├── utils/             # helpers reutilizables 
-├── dao/               # aún no utilizado
 ├── middlewares/       # intermediarios para autenticación y protección de rutas
-├── repositories/      # aún no utilizado
-└── services/          # lógica de negocio
+└── services/          # lógica de negocio (usuarios y sesiones)
 └── app.js             # configuración de la app de Express
 ```
+## Sistema de Autenticación - passport.js
+
+El proyecto utiliza **Passport.js** a través de tres estrategias:
+1. **`register` (LocalStrategy):** Valida y registra un nuevo usuario con la contraseña hasheada.
+2. **`login` (LocalStrategy):** Valida credenciales y genera un token JWT.
+3. **`current` (JwtStrategy):** Lee el token desde las cookies firmadas y protege las rutas privadas.
+
+*Está estructurado para poder agregar nuevas estrategias (Google, GitHub, etc.) sin tocar app.js*
 
 ## Endpoints principales
 
@@ -68,7 +74,6 @@ src/
 |--------|----------------------------------|----------------------------------------------------------------------------|
 | GET    | `/api/health`                    | Verifica que el servidor está activo                                       |
 | GET    | `/api/users`                     | Lista los usuarios registrados                                             |
-| POST   | `/api/users`                     | Crea un usuario                                                            |
 | GET    | `/api/events`                    | Lista los eventos disponibles                                              |
 | POST   | `/api/events`                    | Crea un evento                                                             |
 | POST   | `/api/sessions/register`         | Registra un usuario nuevo                                                  |
@@ -86,6 +91,11 @@ curl http://localhost:3000/api/events
 # { "message": [] }
 ```
 
+# Registrar un usuario nuevo:
+curl -X POST http://localhost:3000/api/sessions/register \
+  -H "Content-Type: application/json" \
+  -d '{"first_name": "Sabri", "last_name": "Farias", "email": "sabrifa@mail.com", "password": "password123"}'
+
 ## Estado del proyecto
 
-Etapa 3 (Pre-entrega 3): Implementación de autenticación con JWT, cookie HTTP Only, middleware de autenticación y control de sesiones.
+Etapa 4 (Pre-entrega 4): Refactorización del sistema de autenticación utilizando Passport.js (estrategias Local y JWT).

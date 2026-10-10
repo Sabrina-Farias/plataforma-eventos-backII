@@ -14,11 +14,4 @@ export const getUsers = async (req, res) => {
     }
 }
 
-export const createUsers = async (req, res) => {
-    try {
-        res.json({ message: 'Usuario Creado' })
-    }
-    catch (error) {
-        res.status(500).json({ error: 'Error al crear el Usuario' })
-    }
-}
+

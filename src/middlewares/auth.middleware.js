@@ -2,7 +2,7 @@ import { verifyToken } from '../utils/jwt.utils.js'
 
 export const authMiddleware = async (req, res, next) => {
     try {
-        const token = req.cookies.currentUser
+        const token = req.signedCookies.currentUser
 
         if (!token) {
             return res.status(401).json({
