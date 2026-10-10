@@ -68,18 +68,46 @@ El proyecto utiliza **Passport.js** a través de tres estrategias:
 
 *Está estructurado para poder agregar nuevas estrategias (Google, GitHub, etc.) sin tocar app.js*
 
-## Endpoints principales
+## Roles disponibles
 
-| Método | Endpoint                         | Descripción                                                                |
-|--------|----------------------------------|----------------------------------------------------------------------------|
-| GET    | `/api/health`                    | Verifica que el servidor está activo                                       |
-| GET    | `/api/users`                     | Lista los usuarios registrados                                             |
-| GET    | `/api/events`                    | Lista los eventos disponibles                                              |
-| POST   | `/api/events`                    | Crea un evento                                                             |
-| POST   | `/api/sessions/register`         | Registra un usuario nuevo                                                  |
-| POST   | `/api/sessions/login`            | Autentificación de usuario, generando el token y lo almacena en una cookie |
-| GET    | `/api/sessions/current`          | Ruta protegida por middleware. Lee la cookie, verifica el token y retorna los datos del usuario |
-| POST   | `/api/sessions/logout`           | Cierra la sesión y elimina la cookie                                       |
+El proyecto está preparado para trabajar con tres roles:
+- **user**: consulta clases y workshops y se inscribe o reserva su lugar.
+- **organizer**: crea y administra clases y workshops.
+- **admin**: gestiona usuarios, categorías, clases, workshops e inscripciones.
+
+## Matriz de permisos
+| Acción                                                          | User       | Organizer  | Admin      |
+|-----------------------------------------------------------------|------------|------------|------------|
+| Ver clases/workshops (`GET /api/events`)                        | Si         | Si         | Si         |
+| Crear clases/workshops (`POST /api/events`)                     | No         | Si         | Si         |
+| Editar clases/workshops propios (`PUT /api/events/:id`)         | No         | Si         | Si         |
+| Editar cualquier clase/workshop (`PUT /api/events/:id`)         | No         | No         | Si         |
+| Ver todos los usuarios (`GET /api/users`)                       | No         | No         | Si         |
+
+## Manejo de Respuestas HTTP (401 vs 403)
+
+En esta entrega se implementa una diferenciación estricta entre estados de autenticación y autorización:
+
+- **`401 Unauthorized`**: El cliente no se encuentra autenticado (no envió la cookie firmada `currentUser`, el token es inválido o expiró).
+  - *Respuesta:* `{ "status": "error", "message": "No autenticado" }`
+- **`403 Forbidden`**: El cliente está autenticado correctamente, pero su rol no posee los permisos necesarios para acceder (ej. un `user` intentando crear un evento o acceder a `/api/users`, o un `organizer` intentando modificar un evento del cual no es creador.)
+  - *Respuesta:* `{ "status": "error", "message": "Rol insuficiente" }` o `{ "status": "error", "message": "No tenés permisos para modificar este evento" }`
+
+---
+
+## Endpoints principales y Códigos de Respuesta
+
+| Método| Endpoint                | Descripción                           | Acceso / Rol                 | Éxito        | Sin Auth | Sin Rol |
+|-------|-------------------------|---------------------------------------|------------------------------|--------------|----------|---------|
+| `GET` | `/api/health`           | Verifica que el servidor está activo  | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`| `/api/sessions/register`| Registra un nuevo usuario             | Público                      | `201 Created`| N/A      | N/A     |
+| `POST`| `/api/sessions/login`   | Inicia sesión y genera cookie firmada | Público                      | `200 OK`     | N/A      | N/A     |
+| `GET` | `/api/sessions/current` | Retorna datos del usuario autenticado | Autenticado                  | `200 OK`     | `401`    | N/A     |
+| `POST`| `/api/sessions/logout`  | Cierra la sesión y elimina la cookie  | Público / Autenticado        | `200 OK`     | N/A      | N/A     |
+| `GET` | `/api/events`           | Ver los eventos disponibles           | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`| `/api/events`           | Crea un nuevo evento                  | `organizer`, `admin`         | `201 Created`| `401`    | `403`   |
+| `PUT` | `/api/events/:eventId`  | Modifica un evento existente          | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
+| `GET` | `/api/users`            | Ver todos los usuarios registrados    | Solo `admin` | `200 OK`      | `401`        | `403`    |         |
 
 ## Ejemplo de uso
 
@@ -98,4 +126,4 @@ curl -X POST http://localhost:3000/api/sessions/register \
 
 ## Estado del proyecto
 
-Etapa 4 (Pre-entrega 4): Refactorización del sistema de autenticación utilizando Passport.js (estrategias Local y JWT).
+Etapa 5 (Pre-entrega 5): Implementación de sistema de roles, autorización y protección de recursos por permisos y propiedad.

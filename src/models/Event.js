@@ -10,6 +10,11 @@ const eventSchema = new Schema({
         type: String,
         required: true,
         trim: true,
+    },
+    organizer:{
+        type: Schema.Types.ObjectId,
+        ref: 'users',
+        required: true,
     }
 }, {
     timestamps: true
