@@ -136,4 +136,4 @@ curl -X POST http://localhost:3000/api/sessions/register \
 
 ## Estado del proyecto
 
-Etapa 6 (Pre-entrega 6): Entidad events y lógica de negocio. Implementación de capas de dominio, DTO, repositorio de eventos, filtros avanzados y validaciones temporales.
+Etapa 7 (Pre-entrega 7): Entidad tickets, inscripciones, control de cupos y notificaciones por email con Nodemailer.
