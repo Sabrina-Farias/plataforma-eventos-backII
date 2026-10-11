@@ -29,4 +29,11 @@ app.get('/api/health', (req, res) => {
     });
 })
 
+app.use( (req,res) => {
+    res.status(404).json({ 
+        status: 'error',
+        message: 'Ruta no encontrada'
+    });
+})
+
 export default app;

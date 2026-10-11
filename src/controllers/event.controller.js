@@ -1,65 +1,104 @@
-import { EventModel } from "../models/Event.js"
-import { createEventService } from "../services/event.service.js"
+import { createEventService, getEventByIdService, findEventService, updateEventService } from "../services/event.service.js";
 
 export const getEvents = async (req, res) => {
     try {
-        res.status(200).json({
+        const result = await findEventService(req.query);
+
+        return res.status(200).json({
             status: "success",
-            payload: await EventModel.find({})
+            payload: result
         });
-    }
-    catch (error) {
-        res.status(500).json({
+    } catch (error) {
+        return res.status(500).json({
             status: "error",
             message: "Error al obtener eventos"
-        })
+        });
     }
-}
+};
 
-export const createEvent = async (req, res) => {
+export const getEventsById = async (req, res) => {
     try {
-        const { title, description } = req.body
+        const { eventId } = req.params;
+        const event = await getEventByIdService(eventId);
 
-        if ( !title || !description ){
-            return res.status(400).json({
+        if (!event) {
+            return res.status(404).json({
                 status: "error",
-                message: "Todos los datos son obligatorios"
+                message: "Evento no encontrado"
             });
         }
 
-        const newEvent = await createEventService ( title, description, req.user.id );
+        return res.status(200).json({
+            status: "success",
+            payload: event
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "Error al obtener eventos"
+        });
+    }
+};
+
+export const createEvent = async (req, res) => {
+    try {
+        const { title, description, category, date, location, capacity, price, status } = req.body;
+
+        if (!title || !description || !category || !date || !location || capacity === undefined || capacity === null) {
+            return res.status(400).json({
+                status: "error",
+                message: "Todos los campos son obligatorios"
+            });
+        }
+
+        const eventData = { 
+            title, 
+            description, 
+            category, 
+            date, 
+            location, 
+            capacity: Number(capacity), 
+            price: price !== undefined ? Number(price) : 0, 
+            status: status || 'draft', 
+            organizer: req.user.id 
+        };
+
+        const newEvent = await createEventService(eventData);
 
         return res.status(201).json({
             status: "success",
             payload: newEvent
-        })
-    }
-    catch (error) {
-        res.status(500).json({
+        });
+    } catch (error) {
+        const statusCode = error.statusCode || 400;
+        return res.status(statusCode).json({
             status: "error",
-            message: "Error al crear el Evento"
-        })
+            message: error.message || "Error al crear el Evento"
+        });
     }
-} 
+};
 
 export const updateEvent = async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { eventId } = req.params;
+        const updatedEvent = await updateEventService(eventId, req.body);
 
-        if (title) req.event.title = title;
-        if (description) req.event.description = description;
-
-        const updatedEvent = await req.event.save();
+        if (!updatedEvent) {
+            return res.status(404).json({
+                status: "error",
+                message: "Evento no encontrado para actualizar"
+            });
+        }
 
         return res.status(200).json({ 
             status: "success", 
             payload: updatedEvent 
-            });
-    }
-    catch (error) {
-        return res.status(500).json({ 
+        });
+    } catch (error) {
+        const statusCode = error.statusCode || 500;
+        return res.status(statusCode).json({ 
             status: "error", 
-            message: "Error al modificar el Evento" 
+            message: error.message || "Error al modificar el Evento" 
         });
     }
-}
+};

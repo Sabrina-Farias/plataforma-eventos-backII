@@ -15,6 +15,7 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 - bcrypt
 - jsonwebtoken
 - cookie-parser
+- passport, passport-local y passport-jwt
 
 ## Instalación
 
@@ -56,7 +57,9 @@ src/
 ├── models/            # schemas de Mongoose
 ├── utils/             # helpers reutilizables 
 ├── middlewares/       # intermediarios para autenticación y protección de rutas
-└── services/          # lógica de negocio (usuarios y sesiones)
+├── services/          # lógica de negocio (usuarios y sesiones)
+├── repositories/      # abstracción y consultas a Mongoose
+├── dto/               # formateo y transferencia de datos hacia el cliente
 └── app.js             # configuración de la app de Express
 ```
 ## Sistema de Autenticación - passport.js
@@ -84,9 +87,16 @@ El proyecto está preparado para trabajar con tres roles:
 | Editar cualquier clase/workshop (`PUT /api/events/:id`)         | No         | No         | Si         |
 | Ver todos los usuarios (`GET /api/users`)                       | No         | No         | Si         |
 
-## Manejo de Respuestas HTTP (401 vs 403)
+## Lógica de Negocio y Reglas de Dominio
+La entidad Event cuenta con validaciones:
+- Validación temporal: La fecha del evento debe ser posterior a la fecha actual.
+- Capacidad mínima: El campo capacity debe ser m-ayor o igual a 1.
+- Precio válido: El campo price no puede recibir valor negativo.
+- Estados de evento: draft, published, cancelled y finished.
+- Filtros y paginación: GET /api/events admite consultas por category, status, búsqueda parcial por título (search), paginación (page, limit) y ordenamiento por fecha.
+- Uso de DTO: Respuestas de eventos moldeadas con EventDetailDTO.
 
-En esta entrega se implementa una diferenciación estricta entre estados de autenticación y autorización:
+## Manejo de Respuestas HTTP (401 vs 403)
 
 - **`401 Unauthorized`**: El cliente no se encuentra autenticado (no envió la cookie firmada `currentUser`, el token es inválido o expiró).
   - *Respuesta:* `{ "status": "error", "message": "No autenticado" }`
@@ -126,4 +136,4 @@ curl -X POST http://localhost:3000/api/sessions/register \
 
 ## Estado del proyecto
 
-Etapa 5 (Pre-entrega 5): Implementación de sistema de roles, autorización y protección de recursos por permisos y propiedad.
+Etapa 6 (Pre-entrega 6): Entidad events y lógica de negocio. Implementación de capas de dominio, DTO, repositorio de eventos, filtros avanzados y validaciones temporales.

@@ -10,6 +10,9 @@ export const getUsers = async (req, res) => {
         });
     }
     catch (error) {
-        res.status(500).json({ error: 'Error al obtener Usuarios' })
+        res.status(500).json({
+            status: "error",
+            message: "Error al obtener Usuarios"
+        });
     }
 }

@@ -1,56 +1,61 @@
-import { getEventById } from "../services/event.service.js";
+import { getEventByIdService } from "../services/event.service.js";
 
-export const authorizeRoles = (...allowedRoles ) => {
+export const authorizeRoles = (...allowedRoles) => {
     return (req, res, next) => {
         try {
             if (!req.user) {
                 return res.status(401).json({
-                    status:"error",
+                    status: "error",
                     message: "No autenticado"
                 });
-    }
-            if ( !allowedRoles.includes( req.user.role )) {
-                return res.status(403).json ({
-                    status:"error",
-                    message: "Rol insuficiente"
-                })
             }
-            next ()
+
+            if (!allowedRoles.includes(req.user.role)) {
+                return res.status(403).json({
+                    status: "error",
+                    message: "Rol insuficiente"
+                });
+            }
+
+            next();
+        } catch (error) {
+            return res.status(500).json({
+                status: "error",
+                message: error.message || error.toString()
+            });
         }
-        catch ( error ) {
-            return res.status(500).json({ "error":error.toString()})
-        }
-    }
-}
+    };
+};
 
 export const authorizeEventOwnerOrAdmin = async (req, res, next) => {
     try {
-        const { eventId } = req.params
-
-        const event = await getEventById ( eventId )
+        const { eventId } = req.params;
+        const event = await getEventByIdService(eventId);
 
         if (!event) {
             return res.status(404).json({
-            status: 'error',
-            message: 'Evento no encontrado'
-            })
+                status: "error",
+                message: "Evento no encontrado"
+            });
         }
 
-        const isAdmin = req.user.role === 'admin'
-        const isOwner = event.organizer.toString() === req.user.id.toString()
+        const isAdmin = req.user.role === 'admin';
+        const organizerId = event.organizer?.id || event.organizer?._id || event.organizer;
+        const isOwner = organizerId.toString() === req.user.id.toString();
 
         if (!isAdmin && !isOwner) {
             return res.status(403).json({
-            status: 'error',
-            message: 'No tenés permisos para modificar este evento'
-            })
+                status: "error",
+                message: "No tenés permisos para modificar este evento"
+            });
         }
 
-        req.event = event
-
-        next()
+        req.targetEventId = eventId;
+        next();
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: error.message || error.toString()
+        });
     }
-    catch ( error ) {
-        return res.status(500).json({ "error":error.toString()})
-    }
-}
+};
