@@ -1,26 +1,17 @@
-import { verifyToken } from '../utils/jwt.utils.js'
+import passport from "passport";
 
-export const authMiddleware = async (req, res, next) => {
-    try {
-        const token = req.signedCookies.currentUser
-
-        if (!token) {
-            return res.status(401).json({
-                status: 'error',
-                message: 'No autenticado'
-            })
+export const authMiddleware = (req, res, next) => {
+    passport.authenticate("current", { session: false }, (err, user, info) => {
+        if (err) {
+            return next(err);
         }
-
-        const payload = verifyToken(token);
-
-        req.user = payload;
-
-        next()
-    }
-    catch {
-        return res.status(401).json({
-            status: 'error',
-            message: 'No autenticado'
-        })
-    }
-}
+        if (!user) {
+            return res.status(401).json({
+                status: "error",
+                message: info?.message || "No autenticado"
+            });
+        }
+        req.user = user;
+        next();
+    })(req, res, next);
+};

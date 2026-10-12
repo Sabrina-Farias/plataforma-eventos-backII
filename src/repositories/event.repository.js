@@ -26,26 +26,27 @@ export const getEventByIdRepo = async (eventId) => {
 export const findEventRepo = async (filter = {}, options = {}) => {
     try {
         const { page = 1, limit = 10, sort = { date: 1 } } = options;
-        const skip = (Number(page) - 1) * Number(limit);
 
-        const [lEvents, total] = await Promise.all([
-            EventModel.find(filter)
-                .populate('organizer')
-                .sort(sort)
-                .skip(skip)
-                .limit(Number(limit)),
-            EventModel.countDocuments(filter)
-        ]);
-
-        const totalPages = Math.ceil(total / Number(limit)) || 1;
-        const data = lEvents.map(event => new EventDetailDTO(event));
-
-        return {
-            data,
+        const paginateOptions = {
             page: Number(page),
             limit: Number(limit),
-            total,
-            totalPages
+            sort,
+            populate: 'organizer',
+            lean: false
+        };
+
+        const result = await EventModel.paginate(filter, paginateOptions);
+
+        return {
+            data: result.docs.map(event => new EventDetailDTO(event)),
+            page: result.page,
+            limit: result.limit,
+            total: result.totalDocs,
+            totalPages: result.totalPages,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage
         };
     } catch (error) {
         throw error;

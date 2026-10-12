@@ -5,6 +5,8 @@ import { env } from "./config/env.js"
 import userRoutes from "./routes/users.routes.js"
 import eventRoutes from "./routes/events.routes.js"
 import sessionsRoutes from "./routes/sessions.routes.js"
+import { errorHandler } from "./middlewares/error.middleware.js";
+
 
 import './config/passport.config.js'
 import passport from "passport"
@@ -35,5 +37,7 @@ app.use( (req,res) => {
         message: 'Ruta no encontrada'
     });
 })
+
+app.use(errorHandler);
 
 export default app;

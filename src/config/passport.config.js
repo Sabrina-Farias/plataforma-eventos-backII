@@ -15,7 +15,7 @@ passport.use('register', new LocalStrategy( { usernameField:'email', passwordFie
             return done(null, newUser);
         }
         catch (error) {
-            return done(null, false, { message: error.message });
+            return done( error );
         }
     }
 ));

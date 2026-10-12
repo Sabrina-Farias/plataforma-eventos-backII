@@ -11,6 +11,7 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 - Node.js (módulos ESM)
 - Express
 - MongoDB
+- mongoose-paginate-v2
 - dotenv
 - bcrypt
 - jsonwebtoken
@@ -60,6 +61,7 @@ src/
 ├── services/          # lógica de negocio (usuarios y sesiones)
 ├── repositories/      # abstracción y consultas a Mongoose
 ├── dto/               # formateo y transferencia de datos hacia el cliente
+├── errors/            # errores personalizados
 └── app.js             # configuración de la app de Express
 ```
 ## Sistema de Autenticación - passport.js
@@ -79,13 +81,14 @@ El proyecto está preparado para trabajar con tres roles:
 - **admin**: gestiona usuarios, categorías, clases, workshops e inscripciones.
 
 ## Matriz de permisos
-| Acción                                                          | User       | Organizer  | Admin      |
-|-----------------------------------------------------------------|------------|------------|------------|
-| Ver clases/workshops (`GET /api/events`)                        | Si         | Si         | Si         |
-| Crear clases/workshops (`POST /api/events`)                     | No         | Si         | Si         |
-| Editar clases/workshops propios (`PUT /api/events/:id`)         | No         | Si         | Si         |
-| Editar cualquier clase/workshop (`PUT /api/events/:id`)         | No         | No         | Si         |
-| Ver todos los usuarios (`GET /api/users`)                       | No         | No         | Si         |
+| Acción                                                              | User       | Organizer  | Admin      |
+|---------------------------------------------------------------------|------------|------------|------------|
+| Ver clases/workshops (`GET /api/events`)                            | Si         | Si         | Si         |
+| Crear clases/workshops (`POST /api/events`)                         | No         | Si         | Si         |
+| Editar clases/workshops propios (`PUT /api/events/:id`)             | No         | Si         | Si         |
+| Editar cualquier clase/workshop (`PUT /api/events/:id`)             | No         | No         | Si         |
+| Cancelar clases/workshops propios (`PATCH /api/events/:id/cancel`)  | No         | Si         | Si         |
+| Ver todos los usuarios (`GET /api/users`)                           | No         | No         | Si         |
 
 ## Lógica de Negocio y Reglas de Dominio
 La entidad Event cuenta con validaciones:
@@ -93,7 +96,8 @@ La entidad Event cuenta con validaciones:
 - Capacidad mínima: El campo capacity debe ser m-ayor o igual a 1.
 - Precio válido: El campo price no puede recibir valor negativo.
 - Estados de evento: draft, published, cancelled y finished.
-- Filtros y paginación: GET /api/events admite consultas por category, status, búsqueda parcial por título (search), paginación (page, limit) y ordenamiento por fecha.
+- Restricción de modificación: no se permite editar ni cancelar eventos que ya finalizaron, que ya fueron cancelados o que ya transcurrieron.
+- Filtros y paginación: GET /api/events admite consultas por date, price, title y createdAt en sentido asc o desc.
 - Uso de DTO: Respuestas de eventos moldeadas con EventDetailDTO.
 
 ## Manejo de Respuestas HTTP (401 vs 403)
@@ -107,17 +111,18 @@ La entidad Event cuenta con validaciones:
 
 ## Endpoints principales y Códigos de Respuesta
 
-| Método| Endpoint                | Descripción                           | Acceso / Rol                 | Éxito        | Sin Auth | Sin Rol |
-|-------|-------------------------|---------------------------------------|------------------------------|--------------|----------|---------|
-| `GET` | `/api/health`           | Verifica que el servidor está activo  | Público                      | `200 OK`     | N/A      | N/A     |
-| `POST`| `/api/sessions/register`| Registra un nuevo usuario             | Público                      | `201 Created`| N/A      | N/A     |
-| `POST`| `/api/sessions/login`   | Inicia sesión y genera cookie firmada | Público                      | `200 OK`     | N/A      | N/A     |
-| `GET` | `/api/sessions/current` | Retorna datos del usuario autenticado | Autenticado                  | `200 OK`     | `401`    | N/A     |
-| `POST`| `/api/sessions/logout`  | Cierra la sesión y elimina la cookie  | Público / Autenticado        | `200 OK`     | N/A      | N/A     |
-| `GET` | `/api/events`           | Ver los eventos disponibles           | Público                      | `200 OK`     | N/A      | N/A     |
-| `POST`| `/api/events`           | Crea un nuevo evento                  | `organizer`, `admin`         | `201 Created`| `401`    | `403`   |
-| `PUT` | `/api/events/:eventId`  | Modifica un evento existente          | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
-| `GET` | `/api/users`            | Ver todos los usuarios registrados    | Solo `admin` | `200 OK`      | `401`        | `403`    |         |
+| Método   | Endpoint                | Descripción                           | Acceso / Rol                 | Éxito        | Sin Auth | Sin Rol |
+|----------|-------------------------|---------------------------------------|------------------------------|--------------|----------|---------|
+| `GET`    | `/api/health`           | Verifica que el servidor está activo  | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`   | `/api/sessions/register`| Registra un nuevo usuario             | Público                      | `201 Created`| N/A      | N/A     |
+| `POST`   | `/api/sessions/login`   | Inicia sesión y genera cookie firmada | Público                      | `200 OK`     | N/A      | N/A     |
+| `GET`    | `/api/sessions/current` | Retorna datos del usuario autenticado | Autenticado                  | `200 OK`     | `401`    | N/A     |
+| `POST`   | `/api/sessions/logout`  | Cierra la sesión y elimina la cookie  | Público / Autenticado        | `200 OK`     | N/A      | N/A     |
+| `GET`    | `/api/events`           | Ver los eventos disponibles           | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`   | `/api/events`           | Crea un nuevo evento                  | `organizer`, `admin`         | `201 Created`| `401`    | `403`   |
+| `PUT`    | `/api/events/:id`       | Modifica un evento existente          | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
+| `PATCH`  | `/api/events/:id/cancel`| Cancela un evento                     | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
+| `GET`    | `/api/users`            | Ver todos los usuarios registrados    | Solo `admin`                 | `200 OK`     | `401`    | `403`   |
 
 ## Ejemplo de uso
 

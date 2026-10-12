@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const eventSchema = new Schema({
     title: {
@@ -13,11 +14,13 @@ const eventSchema = new Schema({
     },
     category: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     date: {
         type: Date,
-        required: true
+        required: true,
+        index: true
     },
     location: {
         type: String,
@@ -37,15 +40,19 @@ const eventSchema = new Schema({
     status: {
         type: String,
         enum: ['draft', 'published', 'cancelled', 'finished'],
-        default: 'draft'
+        default: 'draft',
+        index: true
     },
-    organizer:{
+    organizer: {
         type: Schema.Types.ObjectId,
         ref: 'users',
         required: true,
+        index: true
     }
 }, {
     timestamps: true
 });
+
+eventSchema.plugin(mongoosePaginate);
 
 export const EventModel = model('events', eventSchema);

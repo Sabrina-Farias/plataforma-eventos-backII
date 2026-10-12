@@ -1,32 +1,25 @@
 import { UserModel } from "../models/User.js";
 import { createHash } from "../utils/password.utils.js";
+import { AppError, ConflictError } from "../errors/app.error.js";
 
 export const registerUser = async ({ first_name, last_name, email, password }) => {
     if (!first_name || !last_name || !email || !password) {
-        const error = new Error('Faltan campos obligatorios');
-        error.statusCode = 400;
-        throw error;
+        throw new AppError("Faltan campos obligatorios", 400);
     }
 
     if (password.length < 6) {
-        const error = new Error('La contraseña debe tener al menos 6 caracteres');
-        error.statusCode = 400;
-        throw error;
+        throw new AppError("La contraseña debe tener al menos 6 caracteres", 400);
     }
 
     const normalizedEmail = email.toLowerCase().trim();
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailValid.test(normalizedEmail)) {
-        const error = new Error('Email inválido');
-        error.statusCode = 400;
-        throw error;
+        throw new AppError("Email inválido", 400);
     }
 
     const userExists = await UserModel.findOne({ email: normalizedEmail });
     if (userExists) {
-        const error = new Error('El email ya está registrado');
-        error.statusCode = 409;
-        throw error;
+        throw new ConflictError("El email ya está registrado");
     }
 
     const hashedPassword = await createHash(password, 10);
@@ -36,7 +29,7 @@ export const registerUser = async ({ first_name, last_name, email, password }) =
         last_name,
         email: normalizedEmail,
         password: hashedPassword,
-        role: 'user'
+        role: "user"
     });
 
     return {
