@@ -158,4 +158,4 @@ curl -X POST http://localhost:3000/api/sessions/register \
 
 ## Estado del proyecto
 
-Etapa 7 (Pre-entrega 7): Entidad tickets, inscripciones, control de cupos y notificaciones por email con Nodemailer.
+Etapa 8 (Pre-entrega 8): Refactorización 

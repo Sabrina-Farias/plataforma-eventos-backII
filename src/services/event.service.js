@@ -82,7 +82,6 @@ export const updateEventService = async (eventId, updateData, currentUser) => {
     return await updateEventRepo(eventId, updateData);
 };
 
-
 export const cancelEventService = async (eventId, currentUser) => {
     const event = await getEventByIdRepo(eventId);
 

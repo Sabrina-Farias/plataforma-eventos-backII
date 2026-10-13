@@ -1,4 +1,4 @@
-import { UserModel } from "../models/User.js";
+import { userRepository } from "../repositories/user.repository.js";
 import { createHash } from "../utils/password.utils.js";
 import { AppError, ConflictError } from "../errors/app.error.js";
 
@@ -17,14 +17,14 @@ export const registerUser = async ({ first_name, last_name, email, password }) =
         throw new AppError("Email inválido", 400);
     }
 
-    const userExists = await UserModel.findOne({ email: normalizedEmail });
+    const userExists = await userRepository.getUserByEmail(normalizedEmail);
     if (userExists) {
         throw new ConflictError("El email ya está registrado");
     }
 
     const hashedPassword = await createHash(password, 10);
 
-    const newUser = await UserModel.create({
+    const newUser = await userRepository.createUser({
         first_name,
         last_name,
         email: normalizedEmail,

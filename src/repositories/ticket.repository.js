@@ -1,18 +1,14 @@
-import { TicketModel } from "../models/Ticket.js";
-import { TicketDetailDTO } from "../dto/ticket-detail.dto.js"
-import { UserModel } from "../models/User.js";
-import { EventModel } from "../models/Event.js";
+import { ticketDAO } from "../dao/TicketDAO.js";
+import { TicketDetailDTO } from "../dto/ticket-detail.dto.js";
 
 export const createTicketRepo = async (ticketData) => {
-    const ticket = await TicketModel.create(ticketData);
-    const populated = await TicketModel.findById(ticket._id)
-        .populate('user')
-        .populate('event');
+    const ticket = await ticketDAO.create(ticketData);
+    const populated = await ticketDAO.findById(ticket._id, ['user', 'event']);
     return new TicketDetailDTO(populated);
 };
 
 export const findByEventAndUserRepo = async (userId, eventId) => {
-    return await TicketModel.findOne({
+    return await ticketDAO.findOne({
         user: userId,
         event: eventId,
         status: { $ne: 'cancelled' }
@@ -20,35 +16,33 @@ export const findByEventAndUserRepo = async (userId, eventId) => {
 };
 
 export const findByUser = async (userId) => {
-    const tickets = await TicketModel.find({ user: userId })
-        .populate('event')
-        .sort({ createdAt: -1 });
-
+    const tickets = await ticketDAO.find(
+        { user: userId },
+        { sort: { createdAt: -1 } }
+    );
     return tickets.map(t => new TicketDetailDTO(t));
 };
 
 export const findTicketByIdRepo = async (ticketId) => {
-    return await TicketModel.findById(ticketId).populate('event');
+    return await ticketDAO.findById(ticketId, ['event']);
 };
 
 export const cancelTicketRepo = async (ticketId) => {
-    const updated = await TicketModel.findByIdAndUpdate(
+    const updated = await ticketDAO.updateById(
         ticketId,
         {
-            $set: {
-                status: 'cancelled',
-                cancelledAt: new Date()
-            }
+            status: 'cancelled',
+            cancelledAt: new Date()
         },
-        { new: true }
-    ).populate('event').populate('user');
+        ['event', 'user']
+    );
 
     if (!updated) return null;
     return new TicketDetailDTO(updated);
 };
 
 export const activeTicketsByEventRepo = async (eventId) => {
-    return await TicketModel.countDocuments({
+    return await ticketDAO.countDocuments({
         event: eventId,
         status: { $ne: 'cancelled' }
     });

@@ -1,4 +1,4 @@
-import { UserModel } from "../models/User.js";
+import { getAllUsersService } from "../services/user.service.js";
 
 /**
  * @param {import('express').Request} req
@@ -7,7 +7,7 @@ import { UserModel } from "../models/User.js";
  */
 export const getUsers = async (req, res, next) => {
     try {
-        const users = await UserModel.find().select("-password");
+        const users = await getAllUsersService();
 
         return res.status(200).json({
             status: "success",
