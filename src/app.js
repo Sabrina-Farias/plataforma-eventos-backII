@@ -5,6 +5,7 @@ import { env } from "./config/env.js"
 import userRoutes from "./routes/users.routes.js"
 import eventRoutes from "./routes/events.routes.js"
 import sessionsRoutes from "./routes/sessions.routes.js"
+import ticketRoutes from "./routes/ticket.routes.js"
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 
@@ -22,6 +23,7 @@ app.use(passport.initialize())
 app.use('/api/users', userRoutes)
 app.use('/api/events', eventRoutes)
 app.use('/api/sessions', sessionsRoutes)
+app.use('/api/tickets', ticketRoutes)
 
 
 app.get('/api/health', (req, res) => {
