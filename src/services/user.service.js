@@ -1,32 +1,36 @@
-import { UserModel } from "../models/User.js"
-import { isValidPassword } from "../utils/password.utils.js"
+import { userRepository } from "../repositories/user.repository.js";
+import { isValidPassword } from "../utils/password.utils.js";
+import { AppError, UnauthorizedError } from "../errors/app.error.js";
 
-export const getUserByEmail = async email => {
-    return await UserModel.findOne({ email })
-}
+export const getUserByEmail = async (email) => {
+    return await userRepository.getUserByEmail(email);
+};
 
-export const validateLogin = async( email, password ) => {
+export const getAllUsersService = async () => {
+    return await userRepository.getAllUsers();
+};
+
+export const validateLogin = async (email, password) => {
     if (!email || !password) {  
-        throw new Error('El email y la contraseña son obligatorios')
+        throw new AppError("El email y la contraseña son obligatorios", 400);
     }
 
-    const normalizedEmail = email.toLowerCase().trim()
-
-    const user = await getUserByEmail(normalizedEmail)
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await getUserByEmail(normalizedEmail);
 
     if (!user) {
-        throw new Error('Credenciales inválidas')
+        throw new UnauthorizedError("Credenciales inválidas");
     }
 
-    const validPassword = await isValidPassword(password, user.password)
+    const validPassword = await isValidPassword(password, user.password);
 
     if (!validPassword) {
-        throw new Error('Credenciales inválidas')
+        throw new UnauthorizedError("Credenciales inválidas");
     }
 
-    return({
+    return {
         id: user._id,
         email: user.email,
         role: user.role
-    })
-}
+    };
+};

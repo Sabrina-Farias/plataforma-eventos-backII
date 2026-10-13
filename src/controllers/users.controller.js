@@ -1,18 +1,19 @@
-import { UserModel } from "../models/User.js"
+import { getAllUsersService } from "../services/user.service.js";
 
-export const getUsers = async (req, res) => {
+/**
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export const getUsers = async (req, res, next) => {
     try {
-        const users = await UserModel.find().select('-password');
-        
+        const users = await getAllUsersService();
+
         return res.status(200).json({
             status: "success",
             payload: users
         });
+    } catch (error) {
+        next(error);
     }
-    catch (error) {
-        res.status(500).json({
-            status: "error",
-            message: "Error al obtener Usuarios"
-        });
-    }
-}
+};

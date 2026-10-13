@@ -1,78 +1,53 @@
-import {
-    purchaseTicketService,
-    getMyTicketsService,
-    getTicketsByEventService,
-    cancelTicketService
-} from "../services/ticket.service.js";
+import { createTicketService, getMyTicketsService, cancelTicketService } from "../services/ticket.service.js";
 
-export const purchaseTicket = async (req, res) => {
+export const createTicket = async (req, res, next) => {
     try {
-        const { eventId } = req.params;
-        const { quantity = 1 } = req.body;
+        const eventId = req.params.eid || req.params.id || req.body.eventId
+        
+        const ticket = await createTicketService({
+            eventId,
+            user: req.user
+        });
 
-        const ticket = await purchaseTicketService(req.user.id, eventId, Number(quantity));
-
-        return res.status(201).json({
-            status: "success",
-            payload: ticket
+        res.status(201).json({
+            status: 'success',
+            message: 'Inscripción realizada con éxito',
+            data: ticket
         });
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({
-            status: "error",
-            message: error.message || "Error al generar la inscripción"
-        });
+        next(error);
     }
 };
 
-export const getMyTickets = async (req, res) => {
+export const getMyTickets = async (req, res, next) => {
     try {
-        const tickets = await getMyTicketsService(req.user.id);
+        const userId = req.user._id || req.user.id;
+        const tickets = await getMyTicketsService(userId);
 
-        return res.status(200).json({
-            status: "success",
-            payload: tickets
+        res.status(200).json({
+            status: 'success',
+            data: tickets
         });
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: error.message || "Error al obtener tus tickets"
-        });
+        next(error);
     }
 };
 
-export const getEventTickets = async (req, res) => {
+export const cancelTicket = async (req, res, next) => {
     try {
-        const { eventId } = req.params;
-        const tickets = await getTicketsByEventService(eventId, req.user);
+        const { tid } = req.params;
 
-        return res.status(200).json({
-            status: "success",
-            payload: tickets
+        const cancelledTicket = await cancelTicketService({
+            ticketId: tid,
+            user: req.user
+        });
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Ticket cancelado correctamente',
+            data: cancelledTicket
         });
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({
-            status: "error",
-            message: error.message || "Error al obtener las inscripciones"
-        });
-    }
-};
-
-export const cancelTicket = async (req, res) => {
-    try {
-        const { ticketId } = req.params;
-        const ticket = await cancelTicketService(ticketId, req.user);
-
-        return res.status(200).json({
-            status: "success",
-            payload: ticket
-        });
-    } catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({
-            status: "error",
-            message: error.message || "Error al cancelar el ticket"
-        });
+        next(error);
     }
 };

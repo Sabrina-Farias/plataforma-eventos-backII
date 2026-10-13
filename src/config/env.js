@@ -7,11 +7,11 @@ export const env = {
     MONGO_URL: process.env.MONGO_URL,
     NODE_ENV: process.env.NODE_ENV || "development",
     JWT_SECRET: process.env.JWT_SECRET,
-    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "24h",
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     COOKIE_SECRET: process.env.COOKIE_SECRET,
-    MAIL_HOST: process.env.MAIL_HOST,
-    MAIL_PORT: Number(process.env.MAIL_PORT) || 587,
-    MAIL_USER: process.env.MAIL_USER,
-    MAIL_PASS: process.env.MAIL_PASS,
-    MAIL_FROM: process.env.MAIL_FROM || "no-reply@eventos.com"
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    MAIL_FROM: process.env.MAIL_FROM,
 };

@@ -1,69 +1,46 @@
+import { eventDAO } from "../dao/EventDAO.js";
 import { EventDetailDTO } from "../dto/event-detail.dto.js";
-import { EventModel } from "../models/Event.js";
 
 export const createEventRepo = async (eventData) => {
-    try {
-        const newEvent = await EventModel.create(eventData);
-        const populatedEvent = await EventModel.findById(newEvent._id).populate('organizer');
-
-        return new EventDetailDTO(populatedEvent);
-    } catch (error) {
-        throw error;
-    }
+    const newEvent = await eventDAO.create(eventData);
+    const populatedEvent = await eventDAO.findById(newEvent._id);
+    return new EventDetailDTO(populatedEvent);
 };
 
 export const getEventByIdRepo = async (eventId) => {
-    try {
-        const event = await EventModel.findById(eventId).populate('organizer');
-        if (!event) return null;
-
-        return new EventDetailDTO(event);
-    } catch (error) {
-        throw error;
-    }
+    const event = await eventDAO.findById(eventId);
+    if (!event) return null;
+    return new EventDetailDTO(event);
 };
 
 export const findEventRepo = async (filter = {}, options = {}) => {
-    try {
-        const { page = 1, limit = 10, sort = { date: 1 } } = options;
-        const skip = (Number(page) - 1) * Number(limit);
+    const { page = 1, limit = 10, sort = { date: 1 } } = options;
 
-        const [lEvents, total] = await Promise.all([
-            EventModel.find(filter)
-                .populate('organizer')
-                .sort(sort)
-                .skip(skip)
-                .limit(Number(limit)),
-            EventModel.countDocuments(filter)
-        ]);
+    const paginateOptions = {
+        page: Number(page),
+        limit: Number(limit),
+        sort,
+        populate: 'organizer',
+        lean: false
+    };
 
-        const totalPages = Math.ceil(total / Number(limit)) || 1;
-        const data = lEvents.map(event => new EventDetailDTO(event));
+    const result = await eventDAO.paginate(filter, paginateOptions);
 
-        return {
-            data,
-            page: Number(page),
-            limit: Number(limit),
-            total,
-            totalPages
-        };
-    } catch (error) {
-        throw error;
-    }
+    return {
+        data: result.docs.map(event => new EventDetailDTO(event)),
+        page: result.page,
+        limit: result.limit,
+        total: result.totalDocs,
+        totalPages: result.totalPages,
+        hasPrevPage: result.hasPrevPage,
+        hasNextPage: result.hasNextPage,
+        prevPage: result.prevPage,
+        nextPage: result.nextPage
+    };
 };
 
 export const updateEventRepo = async (eventId, updateData) => {
-    try {
-        const updated = await EventModel.findByIdAndUpdate(
-            eventId,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        ).populate('organizer');
-
-        if (!updated) return null;
-
-        return new EventDetailDTO(updated);
-    } catch (error) {
-        throw error;
-    }
+    const updated = await eventDAO.updateById(eventId, updateData);
+    if (!updated) return null;
+    return new EventDetailDTO(updated);
 };

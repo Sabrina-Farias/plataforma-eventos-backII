@@ -11,11 +11,13 @@ Plataforma de eventos e inscripciones que permite administrar clases y workshops
 - Node.js (módulos ESM)
 - Express
 - MongoDB
+- mongoose-paginate-v2
 - dotenv
 - bcrypt
 - jsonwebtoken
 - cookie-parser
 - passport, passport-local y passport-jwt
+- Nodemailer (servicio de mensajería por email con Ethereal / SMTP)
 
 ## Instalación
 
@@ -28,14 +30,18 @@ npm install
 
 Crear un archivo `.env` en la raíz del proyecto (usar `.env.example` como referencia) con las siguientes variables:
 
-| Variable           | Descripción                                    |
-|--------------------|------------------------------------------------|
-| `PORT`             | Puerto donde se levanta el servidor            |
-| `MONGO_URL`        | Cadena de conexión a MongoDB                   |
-| `NODE_ENV`         | Entorno de ejecución (development o production)|
-| `JWT_SECRET`       | Clave para firmar y verificar los tokens JWT.  |
-| `JWT_EXPIRES_IN`   | Tiempo de expiración configurado para el token |
-| `COOKIE_SECRET`    | Clave secreta para firmar las cookies.         |
+| Variable        | Descripción                                               |
+|-----------------|-----------------------------------------------------------|
+| `PORT`          | Puerto donde se levanta el servidor                       |
+| `MONGO_URL`     | Cadena de conexión a MongoDB                              |
+| `NODE_ENV`      | Entorno de ejecución (`development` o `production`)       |
+| `JWT_SECRET`    | Clave para firmar y verificar tokens JWT                  |
+| `JWT_EXPIRES_IN`| Tiempo de expiración configurado para el token            |
+| `COOKIE_SECRET` | Clave secreta para firmar las cookies                     |
+| `SMTP_HOST`     | Servidor SMTP (ej. `smtp.ethereal.email`)                 |
+| `SMTP_PORT`     | Puerto del servicio SMTP (`587`)                          |
+| `SMTP_USER`     | Usuario/cuenta de correo emisor                           |
+| `SMTP_PASSWORD` | Contraseña de autenticación SMTP                          |
 
 ## Cómo ejecutar el servidor
 
@@ -60,6 +66,7 @@ src/
 ├── services/          # lógica de negocio (usuarios y sesiones)
 ├── repositories/      # abstracción y consultas a Mongoose
 ├── dto/               # formateo y transferencia de datos hacia el cliente
+├── errors/            # errores personalizados
 └── app.js             # configuración de la app de Express
 ```
 ## Sistema de Autenticación - passport.js
@@ -79,13 +86,17 @@ El proyecto está preparado para trabajar con tres roles:
 - **admin**: gestiona usuarios, categorías, clases, workshops e inscripciones.
 
 ## Matriz de permisos
-| Acción                                                          | User       | Organizer  | Admin      |
-|-----------------------------------------------------------------|------------|------------|------------|
-| Ver clases/workshops (`GET /api/events`)                        | Si         | Si         | Si         |
-| Crear clases/workshops (`POST /api/events`)                     | No         | Si         | Si         |
-| Editar clases/workshops propios (`PUT /api/events/:id`)         | No         | Si         | Si         |
-| Editar cualquier clase/workshop (`PUT /api/events/:id`)         | No         | No         | Si         |
-| Ver todos los usuarios (`GET /api/users`)                       | No         | No         | Si         |
+| Acción                                                              | User       | Organizer  | Admin      |
+|---------------------------------------------------------------------|------------|------------|------------|
+| Ver clases/workshops (`GET /api/events`)                            | Sí         | Sí         | Sí         |
+| Crear clases/workshops (`POST /api/events`)                         | No         | Sí         | Sí         |
+| Editar clases/workshops propios (`PUT /api/events/:id`)             | No         | Sí         | Sí         |
+| Editar cualquier clase/workshop (`PUT /api/events/:id`)             | No         | No         | Sí         |
+| Cancelar clases/workshops propios (`PATCH /api/events/:id/cancel`)  | No         | Sí         | Sí         |
+| Inscribirse a una clase (`POST /api/tickets/:id`)                   | Sí         | Sí         | Sí         |
+| Ver mis tickets / reservas (`GET /api/tickets/my-tickets`)          | Sí         | Sí         | Sí         |
+| Cancelar mi inscripción (`PATCH /api/tickets/:tid/cancel`)          | Sí         | Sí         | Sí         |
+| Ver todos los usuarios (`GET /api/users`)                           | No         | No         | Sí         |
 
 ## Lógica de Negocio y Reglas de Dominio
 La entidad Event cuenta con validaciones:
@@ -93,8 +104,15 @@ La entidad Event cuenta con validaciones:
 - Capacidad mínima: El campo capacity debe ser m-ayor o igual a 1.
 - Precio válido: El campo price no puede recibir valor negativo.
 - Estados de evento: draft, published, cancelled y finished.
-- Filtros y paginación: GET /api/events admite consultas por category, status, búsqueda parcial por título (search), paginación (page, limit) y ordenamiento por fecha.
+- Restricción de modificación: no se permite editar ni cancelar eventos que ya finalizaron, que ya fueron cancelados o que ya transcurrieron.
+- Filtros y paginación: GET /api/events admite consultas por date, price, title y createdAt en sentido asc o desc.
 - Uso de DTO: Respuestas de eventos moldeadas con EventDetailDTO.
+
+### Flujo de Tickets, Cupos y Notificaciones
+- **Control de cupos:** Al confirmar una inscripción se descuenta 1 cupo disponible del evento. Si no hay cupos, la reserva se rechaza.
+- **Unicidad e índice parcial:** Un usuario solo puede tener una reserva activa (`status: "confirmed"`) por evento.
+- **Cancelación y reinscripción:** Al cancelar un ticket (`status: "cancelled"`), el cupo del evento se restituye y el usuario queda habilitado para volverse a inscribir.
+- **Notificación por email:** Al completarse la inscripción, se envía un correo automático con el código de reserva y el detalle del evento vía Nodemailer.
 
 ## Manejo de Respuestas HTTP (401 vs 403)
 
@@ -107,17 +125,21 @@ La entidad Event cuenta con validaciones:
 
 ## Endpoints principales y Códigos de Respuesta
 
-| Método| Endpoint                | Descripción                           | Acceso / Rol                 | Éxito        | Sin Auth | Sin Rol |
-|-------|-------------------------|---------------------------------------|------------------------------|--------------|----------|---------|
-| `GET` | `/api/health`           | Verifica que el servidor está activo  | Público                      | `200 OK`     | N/A      | N/A     |
-| `POST`| `/api/sessions/register`| Registra un nuevo usuario             | Público                      | `201 Created`| N/A      | N/A     |
-| `POST`| `/api/sessions/login`   | Inicia sesión y genera cookie firmada | Público                      | `200 OK`     | N/A      | N/A     |
-| `GET` | `/api/sessions/current` | Retorna datos del usuario autenticado | Autenticado                  | `200 OK`     | `401`    | N/A     |
-| `POST`| `/api/sessions/logout`  | Cierra la sesión y elimina la cookie  | Público / Autenticado        | `200 OK`     | N/A      | N/A     |
-| `GET` | `/api/events`           | Ver los eventos disponibles           | Público                      | `200 OK`     | N/A      | N/A     |
-| `POST`| `/api/events`           | Crea un nuevo evento                  | `organizer`, `admin`         | `201 Created`| `401`    | `403`   |
-| `PUT` | `/api/events/:eventId`  | Modifica un evento existente          | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
-| `GET` | `/api/users`            | Ver todos los usuarios registrados    | Solo `admin` | `200 OK`      | `401`        | `403`    |         |
+| Método   | Endpoint                  | Descripción                             | Acceso / Rol                 | Éxito        | Sin Auth | Sin Rol |
+|----------|---------------------------|-----------------------------------------|------------------------------|--------------|----------|---------|
+| `GET`    | `/api/health`             | Verifica que el servidor está activo    | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`   | `/api/sessions/register`  | Registra un nuevo usuario               | Público                      | `201 Created`| N/A      | N/A     |
+| `POST`   | `/api/sessions/login`     | Inicia sesión y genera cookie firmada   | Público                      | `200 OK`     | N/A      | N/A     |
+| `GET`    | `/api/sessions/current`   | Retorna datos del usuario autenticado   | Autenticado                  | `200 OK`     | `401`    | N/A     |
+| `POST`   | `/api/sessions/logout`    | Cierra la sesión y elimina la cookie    | Público / Autenticado        | `200 OK`     | N/A      | N/A     |
+| `GET`    | `/api/events`             | Ver los eventos disponibles             | Público                      | `200 OK`     | N/A      | N/A     |
+| `POST`   | `/api/events`             | Crea un nuevo evento                    | `organizer`, `admin`         | `201 Created`| `401`    | `403`   |
+| `PUT`    | `/api/events/:id`         | Modifica un evento existente            | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
+| `PATCH`  | `/api/events/:id/cancel`  | Cancela un evento                       | `admin` o creador del evento | `200 OK`     | `401`    | `403`   |
+| `GET`    | `/api/users`              | Ver todos los usuarios registrados      | Solo `admin`                 | `200 OK`     | `401`    | `403`   |
+| `POST`   | `/api/tickets/:id`        | Inscribe al usuario y emite ticket/mail | Autenticado                  | `201 Created` | `401`    | `403`   |
+| `GET`    | `/api/tickets/my-tickets` | Lista las reservas del usuario          | Autenticado                  | `200 OK`      | `401`    | N/A     |
+| `PATCH`  | `/api/tickets/:id/cancel` | Cancela reserva y libera el cupo        | Dueño del ticket o `admin`   | `200 OK`      | `401`    | `403`   |
 
 ## Ejemplo de uso
 
@@ -136,4 +158,4 @@ curl -X POST http://localhost:3000/api/sessions/register \
 
 ## Estado del proyecto
 
-Etapa 7 (Pre-entrega 7): Entidad tickets, inscripciones, control de cupos y notificaciones por email con Nodemailer.
+Etapa 8 (Pre-entrega 8): Refactorización 

@@ -29,8 +29,8 @@ export const authorizeRoles = (...allowedRoles) => {
 
 export const authorizeEventOwnerOrAdmin = async (req, res, next) => {
     try {
-        const { eventId } = req.params;
-        const event = await getEventByIdService(eventId);
+        const { id } = req.params;
+        const event = await getEventByIdService(id);
 
         if (!event) {
             return res.status(404).json({
@@ -50,12 +50,9 @@ export const authorizeEventOwnerOrAdmin = async (req, res, next) => {
             });
         }
 
-        req.targetEventId = eventId;
+        req.targetEventId = id;
         next();
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: error.message || error.toString()
-        });
+        next(error);
     }
 };

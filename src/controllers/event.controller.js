@@ -1,31 +1,26 @@
-import { createEventService, getEventByIdService, findEventService, updateEventService } from "../services/event.service.js";
+import { createEventService, getEventByIdService, getEventsService, updateEventService, cancelEventService } from "../services/event.service.js";
+import { AppError, NotFoundError } from "../errors/app.error.js";
 
-export const getEvents = async (req, res) => {
+export const getEvents = async (req, res, next) => {
     try {
-        const result = await findEventService(req.query);
+        const result = await getEventsService(req.query);
 
         return res.status(200).json({
             status: "success",
             payload: result
         });
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: "Error al obtener eventos"
-        });
+        next(error);
     }
 };
 
-export const getEventsById = async (req, res) => {
+export const getEventsById = async (req, res, next) => {
     try {
-        const { eventId } = req.params;
-        const event = await getEventByIdService(eventId);
+        const { id } = req.params; 
+        const event = await getEventByIdService(id);
 
         if (!event) {
-            return res.status(404).json({
-                status: "error",
-                message: "Evento no encontrado"
-            });
+            throw new NotFoundError("Evento no encontrado");
         }
 
         return res.status(200).json({
@@ -33,22 +28,16 @@ export const getEventsById = async (req, res) => {
             payload: event
         });
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: "Error al obtener eventos"
-        });
+        next(error);
     }
 };
 
-export const createEvent = async (req, res) => {
+export const createEvent = async (req, res, next) => {
     try {
         const { title, description, category, date, location, capacity, price, status } = req.body;
 
         if (!title || !description || !category || !date || !location || capacity === undefined || capacity === null) {
-            return res.status(400).json({
-                status: "error",
-                message: "Todos los campos son obligatorios"
-            });
+            throw new AppError("Todos los campos son obligatorios", 400);
         }
 
         const eventData = { 
@@ -70,24 +59,17 @@ export const createEvent = async (req, res) => {
             payload: newEvent
         });
     } catch (error) {
-        const statusCode = error.statusCode || 400;
-        return res.status(statusCode).json({
-            status: "error",
-            message: error.message || "Error al crear el Evento"
-        });
+        next(error);
     }
 };
 
-export const updateEvent = async (req, res) => {
+export const updateEvent = async (req, res, next) => {
     try {
-        const { eventId } = req.params;
-        const updatedEvent = await updateEventService(eventId, req.body);
+        const { id } = req.params; 
+        const updatedEvent = await updateEventService(id, req.body, req.user);
 
         if (!updatedEvent) {
-            return res.status(404).json({
-                status: "error",
-                message: "Evento no encontrado para actualizar"
-            });
+            throw new NotFoundError("Evento no encontrado para actualizar");
         }
 
         return res.status(200).json({ 
@@ -95,10 +77,21 @@ export const updateEvent = async (req, res) => {
             payload: updatedEvent 
         });
     } catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({ 
-            status: "error", 
-            message: error.message || "Error al modificar el Evento" 
+        next(error);
+    }
+};
+
+export const cancelEvent = async (req, res, next) => {
+    try {
+        const { id } = req.params; 
+        const cancelledEvent = await cancelEventService(id, req.user);
+
+        return res.status(200).json({
+            status: "success",
+            message: "Evento cancelado exitosamente",
+            payload: cancelledEvent
         });
+    } catch (error) {
+        next(error);
     }
 };

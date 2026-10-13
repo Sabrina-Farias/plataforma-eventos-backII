@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
@@ -39,3 +40,22 @@ export const sendTicketConfirmationEmail = async ({ to, userName, eventTitle, ev
         console.error("Error al enviar email de confirmación:", error.message);
     }
 };
+=======
+import { transporter } from "../config/mail.js";
+import { env } from "../config/env.js";
+
+export async function enviarMail ( to, subject, html, text ) {
+    try {
+        await transporter.sendMail({
+            from: env.SMTP_USER,
+            to: to,
+            subject: subject,
+            html: html,
+            text: text
+        });
+    }
+    catch ( error ){
+        throw error
+    }
+}
+>>>>>>> pre-entrega-7-correcciones
